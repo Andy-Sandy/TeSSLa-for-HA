@@ -1,0 +1,8 @@
+{
+    "domain": "tessla",
+    "name": "Tessla",
+    "documentation": "https://yourcomponentdocs.com",
+    "dependencies": [],
+    "codeowners": [],
+    "version": "0.1.0"
+  }
