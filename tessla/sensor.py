@@ -9,7 +9,13 @@ ATTRIBUTION = "Data provided by Tessla"
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
+    existing_sensors = {
+        entity.name: entity
+        for entity in hass.states.all()
+        if entity.domain == "sensor" and entity.name.startswith("Tessla Sensor")
+    }
     sensors = []
+    added_streams = set()
 
     command = [
         "java",
@@ -28,16 +34,31 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     for line in output.decode().splitlines():
         stream_name, value = line.strip().split(" = ")
+        timestamp, stream_name = stream_name.split(":")
+        timestamp = int(timestamp)
 
-        sensors.append(TesslaSensor(stream_name, value))
+        if stream_name in existing_sensors:
+            sensor = existing_sensors[f"Tessla Sensor - {stream_name}"]
+        elif stream_name in added_streams:
+            sensor = sensors[list(added_streams).index(stream_name)]
+        else:
+            sensor_name = f"Tessla Sensor - {stream_name}"
+            sensor = TesslaSensor(sensor_name)
+            added_streams.add(stream_name)
+            sensors.append(sensor)
+            add_entities([sensor])
 
-    add_entities(sensors)
+        sensor.update_state(value)
+        sensor.update_attribute("timestamp", timestamp)
+
+    for sensor in sensors:
+        sensor.schedule_update_ha_state()
 
 
 class TesslaSensor(Entity):
-    def __init__(self, stream_name, value):
-        self._state = value
-        self._name = f"Tessla Sensor - {stream_name}"
+    def __init__(self, name):
+        self._state = None
+        self._name = name
         self._attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
 
     @property
@@ -52,5 +73,16 @@ class TesslaSensor(Entity):
     def device_state_attributes(self):
         return self._attributes
 
+    def update_state(self, state):
+        self._state = state
+
+    def update_attribute(self, name, value):
+        self._attributes[name] = value
+
     def update(self):
-        pass
+        if self.hass is not None:
+            self.schedule_update_ha_state()
+
+    def schedule_update_ha_state(self):
+        if self.hass is not None:
+            super().schedule_update_ha_state()
