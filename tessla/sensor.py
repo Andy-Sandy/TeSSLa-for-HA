@@ -1,88 +1,77 @@
-import logging
+import time
+import threading
 import subprocess
-from homeassistant.const import ATTR_ATTRIBUTION
+
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.event import async_track_state_change
 
-_LOGGER = logging.getLogger(__name__)
+tessla_spec_file = "specification.tessla"
+tessla_jar_file = "tessla.jar"
 
-ATTRIBUTION = "Data provided by Tessla"
-
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    existing_sensors = {
-        entity.name: entity
-        for entity in hass.states.all()
-        if entity.domain == "sensor" and entity.name.startswith("Tessla Sensor")
-    }
-    sensors = []
-    added_streams = set()
-
-    command = [
-        "java",
-        "-jar",
-        "/workspaces/core-dev/homeassistant/components/tessla/tessla.jar",
-        "interpreter",
-        "/workspaces/core-dev/homeassistant/components/tessla/specification.tessla",
-        "/workspaces/core-dev/homeassistant/components/tessla/trace.input",
-    ]
-
-    try:
-        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        _LOGGER.error("Error executing command: %s", e)
-        return
-
-    for line in output.decode().splitlines():
-        stream_name, value = line.strip().split(" = ")
-        timestamp, stream_name = stream_name.split(":")
-        timestamp = int(timestamp)
-
-        if stream_name in existing_sensors:
-            sensor = existing_sensors[f"Tessla Sensor - {stream_name}"]
-        elif stream_name in added_streams:
-            sensor = sensors[list(added_streams).index(stream_name)]
-        else:
-            sensor_name = f"Tessla Sensor - {stream_name}"
-            sensor = TesslaSensor(sensor_name)
-            added_streams.add(stream_name)
-            sensors.append(sensor)
-            add_entities([sensor])
-
-        sensor.update_state(value)
-        sensor.update_attribute("timestamp", timestamp)
-
-    for sensor in sensors:
-        sensor.schedule_update_ha_state()
+# Start the TeSSLa interpreter process with the given specification file.
+tessla_process = subprocess.Popen(
+    ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    universal_newlines=True,
+)
 
 
-class TesslaSensor(Entity):
-    def __init__(self, name):
+async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+    async_add_entities([MySensor(hass)])
+
+
+class MySensor(Entity):
+    def __init__(self, hass):
         self._state = None
-        self._name = name
-        self._attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
+        self._hass = hass
+
+        # Create a separate thread to read and print the TeSSLa output.
+        output_thread = threading.Thread(
+            target=self.async_update, args=[tessla_process]
+        )
+        output_thread.start()
+        output_thread.join()
+
+        # Register a state change listener for the "sensor.random_sensor" entity
+        async_track_state_change(
+            hass, "sensor.random_sensor", self._async_state_changed
+        )
 
     @property
     def name(self):
-        return self._name
+        return "tessla"
 
     @property
     def state(self):
         return self._state
 
-    @property
-    def device_state_attributes(self):
-        return self._attributes
+    async def async_update(self, process):
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            print(line.strip())
+            self._state = line.strip()
+            self.async_schedule_update_ha_state()
 
-    def update_state(self, state):
-        self._state = state
+    async def _async_state_changed(self, entity_id, old_state, new_state):
+        if new_state is None:
+            return
 
-    def update_attribute(self, name, value):
-        self._attributes[name] = value
+    # Send some integer values to the TeSSLa process using its standard input stream.
+    tessla_process.stdin.write("10: x = 2\n")
+    tessla_process.stdin.flush()
+    time.sleep(1)
+    # tessla_process.stdin.write("11: x = 4\n")
+    # tessla_process.stdin.flush()
+    # time.sleep(1)
+    # tessla_process.stdin.write("12: x = 6\n")
+    # tessla_process.stdin.flush()
 
-    def update(self):
-        if self.hass is not None:
-            self.schedule_update_ha_state()
+    # Close the input stream to signal that we're done sending input.
+    # tessla_process.stdin.close()
 
-    def schedule_update_ha_state(self):
-        if self.hass is not None:
-            super().schedule_update_ha_state()
+    # Wait for the TeSSLa process to exit and for the output thread to finish.
+    tessla_process.wait()
