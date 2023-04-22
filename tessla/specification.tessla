@@ -1,5 +1,7 @@
 in x: Events[Int]
 
-def number = x + 1
+def number = x + 5
+def diff = number > 10
 
+out diff
 out number
