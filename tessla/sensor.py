@@ -7,6 +7,9 @@ import os
 # from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.event import async_track_state_change
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from .const import DOMAIN
 
 # Path to tessla files
 tessla_spec_file = os.path.join(
@@ -15,19 +18,23 @@ tessla_spec_file = os.path.join(
 tessla_jar_file = os.path.join("homeassistant", "components", "tessla", "tessla.jar")
 
 _LOGGER = logging.getLogger(__name__)
-DOMAIN = "tessla"
+
+# Start the TeSSLa interpreter process with the given specification file.
+tessla_process = subprocess.Popen(
+    ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    bufsize=1,  # Linebuffer!
+    universal_newlines=True,
+)
+
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the sensor platform."""
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    # Start the TeSSLa interpreter process with the given specification file.
-    tessla_process = subprocess.Popen(
-        ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        bufsize=1,  # Linebuffer!
-        universal_newlines=True,
-    )
     _LOGGER.info("Tessla started")
 
     def tlogger():
@@ -35,14 +42,14 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             _LOGGER.error(f"Tessla failed: {e}")
 
     threading.Thread(target=tlogger).start()
-    ms = MySensor(hass, tessla_process)
+    ms = TesslaSensor(hass, tessla_process)
     add_entities([ms])
     # Create a separate thread to read and print the TeSSLa output.
     # DON'T START IT YET to avoid race condition
     ms.set_output_thread(threading.Thread(target=ms.output))
 
 
-class MySensor(SensorEntity):
+class TesslaSensor(SensorEntity):
     _attr_should_poll = False
 
     def __init__(self, hass, process):
