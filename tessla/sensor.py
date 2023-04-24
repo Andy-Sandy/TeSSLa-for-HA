@@ -30,6 +30,14 @@ tessla_process = subprocess.Popen(
 )
 
 
+# TODO: Config flow:
+# 1) Get the list of entities from the config entry
+# 2) Create a new sensor with this list of entities (update the init method of mysensor to allow this)
+# 3) In the sensor class add a track_state_change listener to each entity in the list
+# 4) Update the state_changed method to send the correct input to tessla
+# 5) Get the specification from the config entry and write it to the speceification.tessla file
+
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up the sensor platform."""
 
