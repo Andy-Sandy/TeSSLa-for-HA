@@ -10,11 +10,11 @@ ENTITY_INPUT = "ENTITY_input"
 
 async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     """Validate the user input"""
-    return {"title": data["entity"]}
+    return {"title": data[ENTITY_INPUT]}
 
 
 class TesslaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a My Component config flow."""
+    """Handle a TeSSLa config flow."""
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -32,7 +32,6 @@ class TesslaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Inclusive(
                     "entity_ids",
                     "step1",
-                    default=entities[0],
                 ): vol.All(vol.Coerce(str), vol.In(entities)),
                 vol.Inclusive(
                     "text", "step1", description="Enter some text", default=""
@@ -42,10 +41,10 @@ class TesslaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is None:
             return self.async_show_form(step_id="user", data_schema=data_schema)
-        errors = {}
 
+        errors = {}
         if user_input is not None:
-            info = validate_input(self.hass, user_input)
+            info = await validate_input(self.hass, user_input)
             return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=data_schema)

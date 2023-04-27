@@ -1,14 +1,19 @@
 {
-    "config": {
-      "flow_title": "{name} ({type})",
-      "step": {
-        "user": {
-          "title": "Configure TeSSLa plugin",
-          "description": "Please choose the sensor you want",
+  "config": {
+    "step": {
+      "user": {
+          "title": "THIS IS TITLE IN STRINGS.JSON",
+          "description": "Some description",
           "data": {
-            "entity": "Entity"
+              "entities": "Entities"
+          },
+          "data_description": {
+              "entities": "The entities to add to the group"
           }
-        }
       }
+    },
+    "error": {
+      "setup_error": "Setup has failed"
     }
+  }
 }
