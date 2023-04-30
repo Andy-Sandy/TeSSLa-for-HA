@@ -1,19 +1,12 @@
 {
-  "config": {
-    "step": {
-      "user": {
-          "title": "THIS IS TITLE IN STRINGS.JSON",
-          "description": "Some description",
+    "config": {
+      "step": {
+        "user": {
           "data": {
-              "entities": "Entities"
+            "entity_input": "hello"
           },
-          "data_description": {
-              "entities": "The entities to add to the group"
-          }
+          "description": "Hellleoeoeoe"
+        }
       }
-    },
-    "error": {
-      "setup_error": "Setup has failed"
     }
   }
-}

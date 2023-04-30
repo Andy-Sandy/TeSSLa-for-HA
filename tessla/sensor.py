@@ -5,11 +5,7 @@ import logging
 import datetime
 import os
 
-# from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change
 
 from .const import DOMAIN
@@ -22,35 +18,29 @@ tessla_jar_file = os.path.join("homeassistant", "components", "tessla", "tessla.
 
 _LOGGER = logging.getLogger(__name__)
 
-tessla_process = subprocess.Popen(
-    ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
-    stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    bufsize=1,  # Linebuffer!
-    universal_newlines=True,
-)
 
+# This replaces the setup_platform method
+async def async_setup_entry(hass, config_entry, add_entities):
+    """Set up the sensor entry."""
+    _LOGGER.warning(f"Config entry said: {config_entry.data}")
 
-# TODO: Config flow:
-# 1) Get the list of entities from the config entry
-# 2) Get the specification from the config entry and write it to the speceification.tessla file
-# This is for the config entry
-async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_devices: AddEntitiesCallback,
-) -> None:
-    """Set up the sensor platform."""
-    tessla_data = hass.data[DOMAIN][config_entry.entry_id]
-    _LOGGER.warning(f"ConfigEntry {config_entry.data}")
-    all_entities = [MySensor(tessla_data, tessla_process)]
-    async_add_devices(all_entities)
+    # TODO: Config flow:
+    # 1) Get the data from the config entry
+    # 2) Create a list of the the entities with corresponding stream names.
+    # 3) Add entities in HA.
+    # 4) Refactor the code below by removin all hardcoded stuff, everything should be set up from the config entry
+    # 2) Get the specification from the config entry and write it to the speceification.tessla file
 
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
     # Start the TeSSLa interpreter process with the given specification file.
     # the spec file needs to be correctly updated before starting the process
+    tessla_process = subprocess.Popen(
+        ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=1,  # Linebuffer!
+        universal_newlines=True,
+    )
     _LOGGER.info("Tessla started")
 
     def tlogger():
@@ -60,11 +50,11 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     threading.Thread(target=tlogger).start()
 
     # TODO: for each sensor in the list retrieved from the config entry, make an entity in HA
-    ms = MySensor(hass, tessla_process)
-    add_entities([ms])
+    ts = TesslaSensor(hass, tessla_process)
+    add_entities([ts])
     # Create a separate thread to read and print the TeSSLa output.
     # DON'T START IT YET to avoid race condition
-    ms.set_output_thread(
+    ts.set_output_thread(
         threading.Thread(target=TesslaReader(hass, tessla_process).output)
     )
 
@@ -89,10 +79,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     async_track_state_change(hass, "sensor.random_sensor", _async_state_changed)
 
 
-args = [("x", "sensor.random")]
-
-
-class MySensor(SensorEntity):
+class TesslaSensor(SensorEntity):
     _attr_should_poll = False
 
     def __init__(self, hass, process):

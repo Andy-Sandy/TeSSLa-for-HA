@@ -5,12 +5,18 @@ from homeassistant import config_entries
 
 from .const import DOMAIN
 
-ENTITY_INPUT = "ENTITY_input"
+ENTITY_INPUT = "entity_input"
+STREAM_NAME_INPUT = "stream_name_input"
+TESLA_SPEC_INPUT = "tesla_spec_input"
+
+# TODO:
+# 1) Add the ability to configure multiple entities with corresponding stream names
+# 2) Add headings and hints to fields in config flow
 
 
 async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     """Validate the user input"""
-    return {"title": data[ENTITY_INPUT]}
+    return {"title": data[STREAM_NAME_INPUT]}
 
 
 class TesslaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -28,14 +34,9 @@ class TesslaFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         data_schema = vol.Schema(
             {
-                vol.Required(ENTITY_INPUT): str,
-                vol.Inclusive(
-                    "entity_ids",
-                    "step1",
-                ): vol.All(vol.Coerce(str), vol.In(entities)),
-                vol.Inclusive(
-                    "text", "step1", description="Enter some text", default=""
-                ): str,
+                vol.Required(STREAM_NAME_INPUT, default=""): str,
+                vol.Required(ENTITY_INPUT, default=entities[0]): vol.In(entities),
+                vol.Required(TESLA_SPEC_INPUT, default=""): str,
             }
         )
 
