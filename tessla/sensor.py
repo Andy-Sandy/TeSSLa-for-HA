@@ -10,29 +10,23 @@ from homeassistant.helpers.event import async_track_state_change
 
 from .const import DOMAIN
 
-# Path to tessla files
-tessla_spec_file = os.path.join(
-    "homeassistant", "components", "tessla", "specification.tessla"
-)
-tessla_jar_file = os.path.join("homeassistant", "components", "tessla", "tessla.jar")
-
 _LOGGER = logging.getLogger(__name__)
 
 
 # This replaces the setup_platform method
 async def async_setup_entry(hass, config_entry, add_entities):
     """Set up the sensor entry."""
-    _LOGGER.warning(f"Config entry said: {config_entry.data}")
-
-    # TODO: Config flow:
-    # 1) Get the data from the config entry
-    # 2) Create a list of the the entities with corresponding stream names.
-    # 3) Add entities in HA.
-    # 4) Refactor the code below by removin all hardcoded stuff, everything should be set up from the config entry
-    # 2) Get the specification from the config entry and write it to the speceification.tessla file
-
     # Start the TeSSLa interpreter process with the given specification file.
     # the spec file needs to be correctly updated before starting the process
+    # Path to tessla files
+    tessla_spec_file = os.path.join(
+        "homeassistant", "components", "tessla", "specification.tessla"
+    )
+
+    tessla_jar_file = os.path.join(
+        "homeassistant", "components", "tessla", "tessla.jar"
+    )
+
     tessla_process = subprocess.Popen(
         ["java", "-jar", tessla_jar_file, "interpreter", tessla_spec_file],
         stdin=subprocess.PIPE,
@@ -43,6 +37,34 @@ async def async_setup_entry(hass, config_entry, add_entities):
     )
     _LOGGER.info("Tessla started")
 
+    _LOGGER.warning(f"Config entry said: {config_entry.data}")
+
+    # TODO: Config flow:
+    # 1) Get the data from the config entry
+    data = config_entry.data
+    # 2) Create a list of the the entities with corresponding stream names.
+    stream_names = []
+    for key in data:
+        if key == "stream_name_input":
+            stream_name = data[key]
+            stream_names.append(stream_name)
+    _LOGGER.warning(f"Stream names: {stream_names}")
+
+    input_entities = []
+    for key in data:
+        if key == "entity_input":
+            input_entity = data[key]
+            input_entities.append(input_entity)
+
+    # Zip the two lists together to create a list of tuples
+    stream_entity_pairs = list(zip(stream_names, input_entities))
+
+    _LOGGER.warning(f"Stream-entity pairs: {stream_entity_pairs}")
+
+    # 3) Add entities in HA.
+    # 4) Refactor the code below by removing all hardcoded stuff, everything should be set up from the config entry
+    # 5) Get the specification from the config entry and write it to the speceification.tessla file
+
     def tlogger():
         for e in tessla_process.stderr:
             _LOGGER.error(f"Tessla failed: {e}")
@@ -52,6 +74,7 @@ async def async_setup_entry(hass, config_entry, add_entities):
     # TODO: for each sensor in the list retrieved from the config entry, make an entity in HA
     ts = TesslaSensor(hass, tessla_process)
     add_entities([ts])
+
     # Create a separate thread to read and print the TeSSLa output.
     # DON'T START IT YET to avoid race condition
     ts.set_output_thread(
@@ -68,15 +91,14 @@ async def async_setup_entry(hass, config_entry, add_entities):
             datetime.datetime.fromisoformat(str(utc_timestamp)).timestamp() * 1000
         )
 
-        tessla_process.stdin.write(
-            # TODO: use time from new_state
-            f"{timestamp}: x = {int(new_state.state)}\n"
-        )
+        tessla_process.stdin.write(f"{timestamp}: x = {int(new_state.state)}\n")
         _LOGGER.warning(f"Tessla notified, value: {new_state}")
 
     # Register a state change listener for the "sensor.random_sensor" entity
     # TODO: do this for every entity in the config_entry
-    async_track_state_change(hass, "sensor.random_sensor", _async_state_changed)
+    for entity in input_entities:
+        _LOGGER.warning(f"Entity: {entity}")
+        async_track_state_change(hass, entity, _async_state_changed)
 
 
 class TesslaSensor(SensorEntity):
@@ -123,7 +145,7 @@ class TesslaReader:
                 _LOGGER.warning("Invalid output format from Tessla: %s", line.strip())
                 continue
             output_name = parts[0].split(": ")[1]
-            # only do something if the output has been configured
+            # Only do something if the output has been configured
             if output_name in ostreams:
                 value = parts[1]
                 entity_id = f"{DOMAIN}.{ostreams[output_name]}"

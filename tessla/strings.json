@@ -1,12 +1,16 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "data": {
-            "entity_input": "hello"
-          },
-          "description": "Hellleoeoeoe"
+  "title": "TeSSLa",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure TeSSLa",
+        "description": "This is the description :)",
+        "data": {
+          "stream_name_input": "Stream",
+          "entity_input": "Entity",
+          "tessla_spec_input": "TeSSLa Specification"
         }
       }
     }
   }
+}

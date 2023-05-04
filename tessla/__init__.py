@@ -1,4 +1,4 @@
-"""The tessla component."""
+"""The TeSSLa component."""
 import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -8,7 +8,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass, config):
-    """Set up the tessla integration."""
+    """Set up the TeSSLa integration."""
     hass.data[DOMAIN] = {}
     return True
 
