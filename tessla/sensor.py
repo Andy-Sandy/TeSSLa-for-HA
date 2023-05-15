@@ -13,9 +13,8 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 
-# This replaces the setup_platform method
 async def async_setup_entry(hass, config_entry, add_entities):
-    """Set up the sensor entry."""
+    """Set up the tessla platform"""
     # Start the TeSSLa interpreter process with the given specification file.
     # the spec file needs to be correctly updated before starting the process
     # Path to tessla files
@@ -63,7 +62,7 @@ async def async_setup_entry(hass, config_entry, add_entities):
 
     # 3) Add entities in HA.
     # 4) Refactor the code below by removing all hardcoded stuff, everything should be set up from the config entry
-    # 5) Get the specification from the config entry and write it to the speceification.tessla file
+    # 5) Get the specification from the config entry and write it to the specification.tessla file
 
     def tlogger():
         for e in tessla_process.stderr:
@@ -71,7 +70,7 @@ async def async_setup_entry(hass, config_entry, add_entities):
 
     threading.Thread(target=tlogger).start()
 
-    # TODO: for each sensor in the list retrieved from the config entry, make an entity in HA
+    # Hardcoded for testing/example
     ts = TesslaSensor(hass, tessla_process)
     add_entities([ts])
 
@@ -102,6 +101,8 @@ async def async_setup_entry(hass, config_entry, add_entities):
 
 
 class TesslaSensor(SensorEntity):
+    """The tesslasensor class"""
+
     _attr_should_poll = False
 
     def __init__(self, hass, process):
@@ -113,6 +114,7 @@ class TesslaSensor(SensorEntity):
         self.running = False
 
     def set_output_thread(self, t):
+        """Set the output thread"""
         self.t = t
 
     @property
@@ -129,14 +131,17 @@ class TesslaSensor(SensorEntity):
 
 
 class TesslaReader:
+    """The tesslareader class"""
+
     def __init__(self, hass, tessla):
         self.tessla = tessla
         self.hass = hass
 
     def output(self):
+        """Handles the tessla output"""
         _LOGGER.info("Waiting for Tessla output.")
         # TODO: Replace this with the list from the config entry
-        ostreams = {"number": "volker", "diff": "Lyslo"}
+        ostreams = {"number": "mapped name1", "diff": "mapped name2"}
 
         for line in self.tessla.stdout:
             _LOGGER.info(f"Tessla said: {line.strip()}.")
