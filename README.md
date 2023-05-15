@@ -1,6 +1,6 @@
 # TeSSLa plugin for Home Assistant
 
-This is the TeSSLa plugin for home assistant. Send and recieve data from Home Assistant to TeSSLa.
+This is the TeSSLa plugin for Home Assistant. Send and recieve data from Home Assistant to TeSSLa.
 
 ## Prerequisites
 
