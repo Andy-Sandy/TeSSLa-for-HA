@@ -42,24 +42,6 @@ async def async_setup_entry(hass, config_entry, add_entities):
     # 1) Get the data from the config entry
     data = config_entry.data
     # 2) Create a list of the the entities with corresponding stream names.
-    stream_names = []
-    for key in data:
-        if key == "stream_name_input":
-            stream_name = data[key]
-            stream_names.append(stream_name)
-    _LOGGER.warning(f"Stream names: {stream_names}")
-
-    input_entities = []
-    for key in data:
-        if key == "entity_input":
-            input_entity = data[key]
-            input_entities.append(input_entity)
-
-    # Zip the two lists together to create a list of tuples
-    stream_entity_pairs = list(zip(stream_names, input_entities))
-
-    _LOGGER.warning(f"Stream-entity pairs: {stream_entity_pairs}")
-
     # 3) Add entities in HA.
     # 4) Refactor the code below by removing all hardcoded stuff, everything should be set up from the config entry
     # 5) Get the specification from the config entry and write it to the specification.tessla file
@@ -95,9 +77,8 @@ async def async_setup_entry(hass, config_entry, add_entities):
 
     # Register a state change listener for the "sensor.random_sensor" entity
     # TODO: do this for every entity in the config_entry
-    for entity in input_entities:
-        _LOGGER.warning(f"Entity: {entity}")
-        async_track_state_change(hass, entity, _async_state_changed)
+
+    async_track_state_change(hass, "sensor.random_sensor", _async_state_changed)
 
 
 class TesslaSensor(SensorEntity):
@@ -141,7 +122,7 @@ class TesslaReader:
         """Handles the tessla output"""
         _LOGGER.info("Waiting for Tessla output.")
         # TODO: Replace this with the list from the config entry
-        ostreams = {"number": "mapped name1", "diff": "mapped name2"}
+        ostreams = {"number": "tessla1", "diff": "tessla2"}
 
         for line in self.tessla.stdout:
             _LOGGER.info(f"Tessla said: {line.strip()}.")
