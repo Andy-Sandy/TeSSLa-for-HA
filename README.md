@@ -11,7 +11,7 @@ Before you begin, make sure you have the following prerequisites installed on yo
 - The [TESSLA interpreter](https://www.tessla.io/) in the form of a JAR file called `tessla.jar`. Place this file in the same folder as the plugin.
 
 ## Installation
-Installation guide [video](https://www.youtube.com/watch?v=1OpX-t9qGQk&ab_channel=%C3%98rjan)
+- Video guide for installation [here](https://youtu.be/1OpX-t9qGQk)
 
 **Dependencies:**
 
