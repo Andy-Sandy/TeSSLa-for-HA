@@ -12,6 +12,7 @@ Before you begin, make sure you have the following prerequisites installed on yo
 
 ## Installation
 Installation guide [video](https://www.youtube.com/watch?v=1OpX-t9qGQk&ab_channel=%C3%98rjan)
+
 **Dependencies:**
 
 - Java: You need Java to run TeSSLa.
