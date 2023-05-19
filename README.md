@@ -18,12 +18,6 @@ Before you begin, make sure you have the following prerequisites installed on yo
 - TeSSLa interpreter JAR: This is the JAR file for TeSSLa.
 - A Home Assistant installation.
 
-**Before Installation:**
-
-- Make sure you have a working installation of Home Assistant, either on a physical device or in a container.
-- Ensure that you have Java installed on your system. TeSSLa Interpreter requires Java to run.
-- Download the TeSSLa Interpreter JAR file from tessla.io.
-
 **Installation:**
 
 1. Download the project files for TeSSLa integration.
